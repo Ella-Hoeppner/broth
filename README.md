@@ -2,7 +2,7 @@
 Broth is a javascript-based artificial life simulation. Broth defines a 2D environment in which particles can interact and join together to form more complex structures. The aim of Broth is to be able to support open-ended neodarwinian evolution, just as happens in the biosphere on Earth. An overview of the goals of Broth, along with the way that the simulation works, is available here: http://fourstrands.org/?p=1075
 
 # Running Broth
-Broth is implemented using an html5 canvas, which means that it can be run in any modern web browser. There is an instance of Broth running on my personal website at https://www.ellahoeppner.com/broth. If you'd like to run Broth locally, you can close this repository, and then start a local web server in the directory where you downloaded it (you can do this by running the command `python -m http.server` if you have python 3 installed), and then accessing the server in your browser (if you're using `python -m http.server`, you can do this by simply visiting `http://localhost:8000/`).
+Broth is implemented using an html5 canvas, which means that it can be run in any modern web browser. There is an instance of Broth running on my personal website at https://www.ellahoeppner.com/broth/index.html. If you'd like to run Broth locally, you can close this repository, and then start a local web server in the directory where you downloaded it (you can do this by running the command `python -m http.server` if you have python 3 installed), and then accessing the server in your browser (if you're using `python -m http.server`, you can do this by simply visiting `http://localhost:8000/`).
 
 # Using Broth
 
