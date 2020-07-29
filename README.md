@@ -2,7 +2,9 @@
 Broth is a javascript-based artificial life simulation. Broth defines a 2D environment in which particles can interact and join together to form more complex structures. The aim of Broth is to be able to support open-ended neodarwinian evolution, just as happens in the biosphere on Earth. An overview of the goals of Broth, along with the way that the simulation works, is available here: http://fourstrands.org/?p=1075
 
 # Running Broth
-Broth is implemented using an html5 canvas, which means that it can be run in any modern web browser. There is an instance of Broth running on my personal website at https://www.ellahoeppner.com/broth/index.html. If you'd like to run Broth locally, you can close this repository, and then start a local web server in the directory where you downloaded it (you can do this by running the command `python -m http.server` if you have python 3 installed), and then accessing the server in your browser (if you're using `python -m http.server`, you can do this by simply visiting `http://localhost:8000/`).
+Broth is implemented using an html5 canvas, which means that it can be run in any modern web browser. If you'd like to run Broth locally, you can close this repository, and then start a local web server in the directory where you downloaded it (you can do this by running the command `python -m http.server` if you have python 3 installed), and then accessing the server in your browser (if you're using `python -m http.server`, you can do this by simply visiting `http://localhost:8000/`).
+
+There'ss an instance of Broth running on my personal website at https://www.ellahoeppner.com/broth/index.html. If you use this version and you'd like to see the replicator that I've designed, you'll need to download the "states" folder in this github repository and load the "default.json" file in Broth manually. See the "Saving and Loading States" section for more details
 
 # Using Broth
 
@@ -21,7 +23,7 @@ Fling (hotkey "f"): With the fling tool selected, you can click on any particle 
 
 Delete (hotkey "x"): When you click on a particle with the delete tool selected, it will be immediately removed from the simulation.
 
-Program (hotkey "p"): Clicking on a control particle with the tool selected allows you to modify the code and internal state of the particle, and also pauses the simulation. See the section "Modifying Controller Code" for more details.
+Program (hotkey "p"): Clicking on a control particle with the tool selected allows you to modify the code and internal state of the particle, and also pauses the simulation. See the "Modifying Controller Code" section for more details.
 
 Inspect (hotkey "i"): The inspect tool is used to view extra information about a particle. For now, control particles are the only kind of particle that respond to the inspect tool. When you select a control particle with the inspect tool, you will see the region in which that control particle is searching for a particle, if the particle specifies any such region.
 
