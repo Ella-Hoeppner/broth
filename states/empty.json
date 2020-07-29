@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "worldSize": 300,
+    "timeDelta": 0.008333333333333333,
+    "drag": 1,
+    "grabberPower": 700,
+    "controlRange": 20,
+    "computationCost": 0.1,
+    "grabberRangeEnergyFactor": 0.02,
+    "energyParticleEnergy": 1,
+    "reprogramCost": 10,
+    "batteryDefaultEnergy": 10000
+  },
+  "particles": [],
+  "randomParticles": []
+}

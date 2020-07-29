@@ -1,0 +1,105 @@
+{
+  "settings": {
+    "worldSize": 300,
+    "timeDelta": 0.008333333333333333,
+    "drag": 1,
+    "grabberPower": 700,
+    "controlRange": 20,
+    "computationCost": 0.1,
+    "grabberRangeEnergyFactor": 0.02,
+    "energyParticleEnergy": 1,
+    "reprogramCost": 10,
+    "batteryDefaultEnergy": 10000
+  },
+  "particles": [
+    {
+      "id": 0,
+      "x": 150,
+      "y": 150,
+      "velocity": {
+        "x": 0,
+        "y": 0
+      },
+      "type": 2,
+      "radius": 1,
+      "mass": 1,
+      "state": {
+        "range": 7,
+        "heldParticles": [
+          0,
+          1,
+          2
+        ],
+        "distances": [
+          [
+            0,
+            4,
+            4
+          ],
+          [
+            4,
+            0,
+            5.656854249492381
+          ],
+          [
+            4,
+            5.656854249492381,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "x": 154,
+      "y": 150,
+      "velocity": {
+        "x": 0,
+        "y": 0
+      },
+      "type": 0,
+      "radius": 1,
+      "mass": 1,
+      "state": {
+        "memory": [
+          1
+        ],
+        "connectionParams": [
+          2,
+          0.5,
+          10,
+          2,
+          13,
+          3,
+          10,
+          2
+        ],
+        "signalFunction": "(if (== (car state) -3) '(7) (if (== (car state) -2) '(13) (if (== (car state) -1) '(-1) (if (== (car state) 1) '(7 13) (if (== (car state) 2) '(7 0 0) '())))))",
+        "connectionFunction": "(if (== (car state) -3) '() (if (== (car state) -2) '(3 0.5 5 1 5 1) (if (== (car state) 0) (if (== (list-length input) 1) '(3 1 15 5 10 2) '(2 -1 5 1)) (if (== (list-length input) 2) '(2 0.5 10 2 13 3 10 2) (if (== (car state) 3) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))",
+        "updateFunction": "(if (and (== (abs (car state)) 3) (== (list-length input) 2)) '(1) (if (== (car state) -2) (if (== (list-length input) 3) '(-3) '(-2)) (if (== (car state) -1) '(-2) (if (== (car state) 0) (if (== (list-length input) 2) '(-1) '(0)) (if (== (car state) 2) '(3) (if (== (car state) 1) (if (== (list-length input) 4) '(2) '(1)) state))))))",
+        "delayFunction": "(if (or (== (car state) -1) (== (car state) 2)) 0 1)",
+        "updateDelay": 0.5666666666666682,
+        "connectedParticles": [
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "x": 150,
+      "y": 146,
+      "velocity": {
+        "x": 0,
+        "y": 0
+      },
+      "type": 3,
+      "radius": 1,
+      "mass": 1,
+      "state": {
+        "energy": 9999.9
+      }
+    }
+  ],
+  "randomParticles": []
+}
