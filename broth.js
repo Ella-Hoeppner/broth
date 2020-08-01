@@ -147,7 +147,7 @@ function numberToParticleType(number) {
 }
 
 function newParticle(x, y, type) {
-  maxParticleId = max([0].concat(particles.map((p) => p.id)))
+  maxParticleId = max([-1].concat(particles.map((p) => p.id)))
   particle = {
     id: maxParticleId + 1,
     x: x,
@@ -715,13 +715,45 @@ async function setup() {
   //Define lisp helper functions
   await lips.exec("(define (list-length l) (if (empty? l) 0 (+ 1 (list-length (cdr l)))))")
 
-  //Load default state
-  var client = new XMLHttpRequest()
+  //Initialize  default state
+  particles = []
+  var replicatorBinder = newParticle(150, 150, PARTICLE.binder)
+  particles.push(replicatorBinder)
+  replicatorBinder.state.heldParticles = [0, 1 ,2]
+  replicatorBinder.state.distances = [
+    [0, 4, 4],
+    [4, 0, 4 * Math.sqrt(2)],
+    [4, 4 * Math.sqrt(2), 4]
+  ]
+  replicatorBinder.state.range=7
+  var replicatorControl = newParticle(154, 150, PARTICLE.control)
+  particles.push(replicatorControl)
+  replicatorControl.state.memory = [1]
+  replicatorControl.state.connectionParams = [2, 0.5, 10, 2, 13, 3, 10, 2]
+  replicatorControl.state.updateDelay = 1
+  replicatorControl.state.connectedParticles = [0, 2]
+  replicatorControl.state.signalFunction = "(if (== (car state) -3) '(7) (if (== (car state) -2) '(13) (if (== (car state) -1) '(-1) (if (== (car state) 1) '(7 13) (if (== (car state) 2) '(7 0 0) '())))))"
+  replicatorControl.state.connectionFunction = "(if (== (car state) -3) '() (if (== (car state) -2) '(3 0.5 5 1 5 1) (if (== (car state) 0) (if (== (list-length input) 1) '(3 1 15 5 10 2) '(2 -1 5 1)) (if (== (list-length input) 2) '(2 0.5 10 2 13 3 10 2) (if (== (car state) 3) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))"
+  replicatorControl.state.updateFunction = "(if (and (== (abs (car state)) 3) (== (list-length input) 2)) '(1) (if (== (car state) -2) (if (== (list-length input) 3) '(-3) '(-2)) (if (== (car state) -1) '(-2) (if (== (car state) 0) (if (== (list-length input) 2) '(-1) '(0)) (if (== (car state) 2) '(3) (if (== (car state) 1) (if (== (list-length input) 4) '(2) '(1)) state))))))"
+  replicatorControl.state.delayFunction = "(if (or (== (car state) -1) (== (car state) 2)) 0 1)"
+  var replicatorBattery = newParticle(150, 146, PARTICLE.battery)
+  particles.push(replicatorBattery)
+  for (var particleType of [PARTICLE.control, PARTICLE.binder, PARTICLE.battery]) {
+    for (var i = 0; i < 60; i++) {
+      var particle = newParticle(random() * simulationSettings.worldSize, random() * simulationSettings.worldSize, particleType)
+      particle.velocity.x = (random() * 2 - 1) * 6
+      particle.velocity.y = (random() * 2 - 1) * 6
+      particles.push(particle)
+    }
+  }
+
+  //Load a default state from JSON. Uncomment this code for local development in which you'd like to automatically load a state from a JSON file
+  /*var client = new XMLHttpRequest()
   client.open('GET', '/states/default.json')
   client.onload = function() {
     loadState(client.responseText)
   }
-  client.send()
+  client.send()*/
 }
 
 
