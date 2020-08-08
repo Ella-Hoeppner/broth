@@ -74,10 +74,10 @@
           10,
           2
         ],
-        "signalFunction": "(if (== (car state) -3) '(7) (if (== (car state) -2) '(13) (if (== (car state) -1) '(-1) (if (== (car state) 1) '(7 13) (if (== (car state) 2) '(7 0 0) '())))))",
-        "connectionFunction": "(if (== (car state) -3) '() (if (== (car state) -2) '(3 0.5 5 1 5 1) (if (== (car state) 0) (if (== (list-length input) 1) '(3 1 15 5 10 2) '(2 -1 5 1)) (if (== (list-length input) 2) '(2 0.5 10 2 13 3 10 2) (if (== (car state) 3) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))",
-        "updateFunction": "(if (and (== (abs (car state)) 3) (== (list-length input) 2)) '(1) (if (== (car state) -2) (if (== (list-length input) 3) '(-3) '(-2)) (if (== (car state) -1) '(-2) (if (== (car state) 0) (if (== (list-length input) 2) '(-1) '(0)) (if (== (car state) 2) '(3) (if (== (car state) 1) (if (== (list-length input) 4) '(2) '(1)) state))))))",
-        "delayFunction": "(if (or (== (car state) -1) (== (car state) 2)) 0 1)",
+        "signalFunction": "(t_if (t_= state '(-3)) '(7) (t_if (t_= state '(-2)) '(13) (t_if (t_= state '(-1)) '(-1) (t_if (t_= state '(1)) '(7 13) (t_if (t_= state '(2)) '(7 0 0) '())))))",
+        "connectionFunction": "(t_if (t_= state '(-3)) '() (t_if (t_= state '(-2)) '(3 0.5 5 1 5 1) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(1)) '(3 1 15 5 10 2) '(2 -1 5 1)) (t_if (t_= (t_size input) '(2)) '(2 0.5 10 2 13 3 10 2) (t_if (t_= state '(3)) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))",
+        "updateFunction": "(t_if (t_and (t_= (t_abs state) '(3)) (t_= (t_size input) '(2))) '(1) (t_if (t_= state '(-2)) (t_if (t_= (t_size input) '(3)) '(-3) '(-2)) (t_if (t_= state '(-1)) '(-2) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(2)) '(-1) '(0)) (t_if (t_= state '(2)) '(3) (t_if (t_= state '(1)) (t_if (t_= (t_size input) '(4)) '(2) '(1)) state))))))",
+        "delayFunction": "(t_if (t_or (t_= state '(-1)) (t_= state '(2))) '(0) '(1))",
         "updateDelay": 0.5666666666666682,
         "connectedParticles": [
           0,

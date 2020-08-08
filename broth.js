@@ -404,7 +404,7 @@ async function timestep(particles, delta, settings) {
           }
           particle.state.memory = lispListToArray((await lips.exec(prependVariables(particle.state.updateFunction, variables)))[0])
           variables["state"] = arrayToLispList(particle.state.memory)
-          particle.state.updateDelay += max(0, lispNumberToNumber((await lips.exec(prependVariables(particle.state.delayFunction, variables)))[0]))
+          particle.state.updateDelay += max(0, lispListToArray((await lips.exec(prependVariables(particle.state.delayFunction, variables)))[0])[0])
           var signal = lispListToArray((await lips.exec(prependVariables(particle.state.signalFunction, variables)))[0])
           for (var i = 0; i < particle.state.connectedParticles.length; i++) {
             var connectedParticle = findParticle(newParticles, particle.state.connectedParticles[i])
@@ -713,7 +713,35 @@ async function setup() {
   COLORS.moverStroke = color(220, 120, 120)
 
   //Define lisp helper functions
-  await lips.exec("(define (list-length l) (if (empty? l) 0 (+ 1 (list-length (cdr l)))))")
+  await lips.exec("(define (before l n) (if (or (<= n 0) (empty? l)) '() (cons (car l) (before (cdr l) (1- n)))))")
+  lips.env.set('expt',function(a,b){
+    if(a<0){
+      return 0
+    }
+    return a**b
+  })
+
+  await lips.exec("(define (t_+ a b) (if (or (empty? a) (empty? b)) '() (cons (+ (car a) (car b)) (t_+ (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_- a b) (if (or (empty? a) (empty? b)) '() (cons (- (car a) (car b)) (t_- (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_* a b) (if (or (empty? a) (empty? b)) '() (cons (* (car a) (car b)) (t_* (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_/ a b) (if (or (empty? a) (empty? b)) '() (cons (/ (car a) (car b)) (t_/ (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_exp a b) (if (or (empty? a) (empty? b)) '() (cons (expt (car a) (car b)) (t_exp (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_sum a) (list (apply + a)))")
+  await lips.exec("(define (t_abs a) (list (apply abs a)))")
+  await lips.exec("(define (t_product a) (list (apply * a)))")
+  await lips.exec("(define (t_reverse a) (reverse a))")
+  await lips.exec("(define (t_size a) (list (if (empty? a) 0 (1+ (car (t_size (cdr a)))))))")
+  await lips.exec("(define (t_floor a) (if (empty? a) '() (cons (floor (car a)) (t_floor (cdr a)))))")
+  await lips.exec("(define (t_not a) (map (lambda (x) (if (> x 0) '0 '1)) a))")
+  await lips.exec("(define (t_and a b) (if (or (empty? a) (empty? b)) '() (cons (if (and (> (car a) 0) (> (car b) 0)) 1 0) (t_and (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_or a b) (if (or (empty? a) (empty? b)) '() (cons (if (or (> (car a) 0) (> (car b) 0)) 1 0) (t_or (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_xor a b) (t_and (t_or a b) (t_not (t_and a b))))")
+  await lips.exec("(define (t_concat a b) (append a b))")
+  await lips.exec("(define (t_before a b) (if (> (car b) 0) (before a (car b)) (before (reverse a) (- (car b)))))")
+  await lips.exec("(define (t_if a b c) (if (> (car a) 0) b c))")
+  await lips.exec("(define (t_= a b) (if (or (empty? a) (empty? b)) '() (cons (if (== (car a) (car b)) 1 0) (t_= (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_> a b) (if (or (empty? a) (empty? b)) '() (cons (if (> (car a) (car b)) 1 0) (t_> (cdr a) (cdr b)))))")
+  await lips.exec("(define (t_< a b) (if (or (empty? a) (empty? b)) '() (cons (if (< (car a) (car b)) 1 0) (t_< (cdr a) (cdr b)))))")
 
   //Initialize  default state
   particles = []
@@ -732,10 +760,10 @@ async function setup() {
   replicatorControl.state.connectionParams = [2, 0.5, 10, 2, 13, 3, 10, 2]
   replicatorControl.state.updateDelay = 1
   replicatorControl.state.connectedParticles = [0, 2]
-  replicatorControl.state.signalFunction = "(if (== (car state) -3) '(7) (if (== (car state) -2) '(13) (if (== (car state) -1) '(-1) (if (== (car state) 1) '(7 13) (if (== (car state) 2) '(7 0 0) '())))))"
-  replicatorControl.state.connectionFunction = "(if (== (car state) -3) '() (if (== (car state) -2) '(3 0.5 5 1 5 1) (if (== (car state) 0) (if (== (list-length input) 1) '(3 1 15 5 10 2) '(2 -1 5 1)) (if (== (list-length input) 2) '(2 0.5 10 2 13 3 10 2) (if (== (car state) 3) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))"
-  replicatorControl.state.updateFunction = "(if (and (== (abs (car state)) 3) (== (list-length input) 2)) '(1) (if (== (car state) -2) (if (== (list-length input) 3) '(-3) '(-2)) (if (== (car state) -1) '(-2) (if (== (car state) 0) (if (== (list-length input) 2) '(-1) '(0)) (if (== (car state) 2) '(3) (if (== (car state) 1) (if (== (list-length input) 4) '(2) '(1)) state))))))"
-  replicatorControl.state.delayFunction = "(if (or (== (car state) -1) (== (car state) 2)) 0 1)"
+  replicatorControl.state.signalFunction = "(t_if (t_= state '(-3)) '(7) (t_if (t_= state '(-2)) '(13) (t_if (t_= state '(-1)) '(-1) (t_if (t_= state '(1)) '(7 13) (t_if (t_= state '(2)) '(7 0 0) '())))))"
+  replicatorControl.state.connectionFunction = "(t_if (t_= state '(-3)) '() (t_if (t_= state '(-2)) '(3 0.5 5 1 5 1) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(1)) '(3 1 15 5 10 2) '(2 -1 5 1)) (t_if (t_= (t_size input) '(2)) '(2 0.5 10 2 13 3 10 2) (t_if (t_= state '(3)) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))"
+  replicatorControl.state.updateFunction = "(t_if (t_and (t_= (t_abs state) '(3)) (t_= (t_size input) '(2))) '(1) (t_if (t_= state '(-2)) (t_if (t_= (t_size input) '(3)) '(-3) '(-2)) (t_if (t_= state '(-1)) '(-2) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(2)) '(-1) '(0)) (t_if (t_= state '(2)) '(3) (t_if (t_= state '(1)) (t_if (t_= (t_size input) '(4)) '(2) '(1)) state))))))"
+  replicatorControl.state.delayFunction = "(t_if (t_or (t_= state '(-1)) (t_= state '(2))) '(0) '(1))"
   var replicatorBattery = newParticle(150, 146, PARTICLE.battery)
   particles.push(replicatorBattery)
   for (var particleType of [PARTICLE.control, PARTICLE.binder, PARTICLE.battery]) {
