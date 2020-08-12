@@ -34,7 +34,99 @@ const DEFAULT_SIMULATION_SETTINGS = {
   energyParticleEnergy: 1,
   reprogramCost: 10,
 
-  batteryDefaultEnergy: 10000
+  batteryDefaultEnergy: 10000,
+
+  mutationChance:0.2,
+
+  mutationGaussianFactor:3,
+  mutationSizeLambda:0.8,
+
+  operations:[
+    {
+      name:"t_+",
+      args:2
+    },
+    {
+      name:"t_-",
+      args:2
+    },
+    {
+      name:"t_*",
+      args:2
+    },
+    {
+      name:"t_/",
+      args:2
+    },
+    {
+      name:"t_exp",
+      args:2
+    },
+    {
+      name:"t_sum",
+      args:1
+    },
+    {
+      name:"t_abs",
+      args:1
+    },
+    {
+      name:"t_product",
+      args:1
+    },
+    {
+      name:"t_reverse",
+      args:1
+    },
+    {
+      name:"t_size",
+      args:1
+    },
+    {
+      name:"t_floor",
+      args:1
+    },
+    {
+      name:"t_not",
+      args:1
+    },
+    {
+      name:"t_and",
+      args:2
+    },
+    {
+      name:"t_or",
+      args:2
+    },
+    {
+      name:"t_xor",
+      args:2
+    },
+    {
+      name:"t_concat",
+      args:2
+    },
+    {
+      name:"t_before",
+      args:2
+    },
+    {
+      name:"t_if",
+      args:3
+    },
+    {
+      name:"t_=",
+      args:2
+    },
+    {
+      name:"t_>",
+      args:2
+    },
+    {
+      name:"t_<",
+      args:2
+    },
+  ]
 }
 
 const COLORS = {}
@@ -78,6 +170,10 @@ var updateFunctionInput = null
 var delayFunctionInput = null
 var internalStateInput = null
 var delayInput = null
+
+function normalRandom(factor){
+  return factor*Math.sqrt(-2*Math.log(random()))*Math.cos(2*Math.PI*random())
+}
 
 function copyPos(p1, p2) {
   p2.x = p1.x
@@ -366,6 +462,216 @@ function findParticle(particleList, id) {
   return null
 }
 
+function lispStringToArray(str) {
+  if(str[0]=="'"){
+    if(str.length==3){
+      return []
+    }
+    return str.slice(2,-1).split(" ").map(s=>(Number(s)))
+  }
+  if(str[0]=="(" && str.slice(-1)==")"){
+    var array=[]
+    str=str.slice(1,-1)
+    var depth=0
+    var currentSubStr=""
+    for(var i=0;i<str.length;i++){
+      if(str[i]=="("){
+        depth++
+      }
+      if(str[i]==")"){
+        depth--
+      }
+      if(depth==0 && str[i]==" "){
+        array.push(lispStringToArray(currentSubStr))
+        currentSubStr=""
+      }
+      else{
+        currentSubStr+=str[i]
+      }
+    }
+    array.push(lispStringToArray(currentSubStr))
+    return array
+  }
+  return str
+}
+
+function arrayToLispString(array) {
+  var str="("
+  if(array.length==0 || !isNaN(array[0])){
+    str="'("
+  }
+  for (var i = 0; i < array.length; i++) {
+    var element=array[i]
+    if(Array.isArray(element)){
+      str+=arrayToLispString(element)
+    }
+    else{
+      str+=element.toString()
+    }
+    if (i != array.length - 1) {
+      str += " "
+    }
+  }
+  return str + ")"
+}
+
+function mutateSexp(sexp,settings) {
+  function getLocations(arr,base){
+    if(!Array.isArray(arr) || !isNaN(arr[0])){
+      return [base]
+    }
+    else{
+      var locs=[base]
+      for(var i=1;i<arr.length;i++){
+        locs=locs.concat(getLocations(arr[i],base.concat([i])))
+      }
+      return locs
+    }
+  }
+
+  function arrayAt(arr,location){
+    for(var i=0;i<location.length;i++){
+      arr=arr[location[i]]
+    }
+    return arr
+  }
+
+  //Convert Lisp string into an array for easier manipulation
+  var array=lispStringToArray(sexp)
+
+  var choice=random()
+  if(choice<1/3){
+    //Pick a random location and replace the subtree there with a new, randomly generated subtree
+    var locations=getLocations(array,[])
+    var chosenLocation=locations[int(random()*locations.length)]
+
+    function randomFloatList(){
+      var list=[]
+      while(random()<settings.mutationSizeLambda){
+        list.push(normalRandom(settings.mutationGaussianFactor))
+      }
+      return list
+    }
+
+    var subChoice=random()
+    var subtree=[]
+    if(subChoice<1/3){
+      //Replace the subtree at the chosen location with a list of random floats
+      subtree='input'
+    }
+    if(subChoice<2/3){
+      //Replace the subtree at the chosen location with a list of random floats
+      subtree=randomFloatList()
+    }
+    else{
+      //Replace the subtree at the chosen location with a subtree consisting of a random function with random lists of floats, or inputs, as arguments
+      var chosenFunction=settings.operations[int(random()*settings.operations.length)]
+      subtree.push(chosenFunction.name)
+      for(var i=0;i<chosenFunction.args;i++){
+        if(random()<1/2){
+          subtree.push(randomFloatList())
+        }
+        else{
+          subtree.push('input')
+        }
+      }
+    }
+
+    //Place the constructed subtree at the chosen location
+    if(chosenLocation.length==0){
+      array=subtree
+    }
+    else{
+      parentArray=arrayAt(array,chosenLocation.slice(0,-1))
+      parentArray[chosenLocation.slice(-1)[0]]=subtree
+    }
+  }
+  else if(choice<2/3){
+    //Pick two random locations, and then replace the subtree at one location with the subtree at the other location
+    var locations=getLocations(array,[])
+    var fromLocation=locations[int(random()*locations.length)]
+    var toLocation=locations[int(random()*locations.length)]
+
+    function copyLispArray(arr){
+      if(!Array.isArray(arr)){
+        return arr
+      }
+      var newArr=[]
+      for(var i=0;i<arr.length;i++){
+        newArr.push(copyLispArray(arr[i]))
+      }
+      return newArr
+    }
+
+    var fromArray=copyLispArray(arrayAt(array,fromLocation))
+
+    if(toLocation.length==0){
+      array=fromArray
+    }
+    else{
+      toParentArray=arrayAt(array,toLocation.slice(0,-1))
+      toParentArray[toLocation.slice(-1)[0]]=fromArray
+    }
+  }
+  else{
+    //Pick a random list of floats and modify it
+    var initialLocations=getLocations(array,[])
+    var locations=[]
+    for(var i=0;i<initialLocations.length;i++){
+      var loc=initialLocations[i]
+      var locationArray=arrayAt(array,loc)
+      if(locationArray.length==0 || !isNaN(locationArray[0])){
+        locations.push(loc)
+      }
+    }
+    if(locations.length>1/3){
+      var chosenLocation=locations[int(random()*locations.length)]
+      var subArray=arrayAt(array,chosenLocation)
+
+      var subChoice=random()
+      if(subChoice<0){
+        //Add a random float to the list at a random location
+        var index=int(random()*(subArray.length+1))
+        subArray.splice(index,0,normalRandom(settings.mutationGaussianFactor))
+      }
+      else if(subChoice<2/3){
+        //Remove a random float from the list
+        if(subArray.length>0){
+          var index=int(random()*subArray.length)
+          subArray.splice(index,1)
+        }
+      }
+      else{
+        //Change a random float in the list
+        if(subArray.length>0){
+          var index=int(random()*subArray.length)
+          subArray[index]+=normalRandom(settings.mutationGaussianFactor)
+        }
+      }
+    }
+  }
+
+  //Convert the array back into a Lisp string
+  return arrayToLispString(array)
+}
+
+function mutateParticle(particle) {
+  switch(int(random()*4)){
+    case 0:
+      particle.state.signalFunction=mutateSexp(particle.state.signalFunction)
+      break
+    case 1:
+      particle.state.connectionFunction=mutateSexp(particle.state.connectionFunction)
+      break
+    case 2:
+      particle.state.updateFunction=mutateSexp(particle.state.updateFunction)
+      break
+    case 3:
+      particle.state.delayFunction=mutateSexp(particle.state.delayFunction)
+      break
+  }
+}
+
 async function timestep(particles, delta, settings) {
   particles = particles.slice()
 
@@ -440,6 +746,9 @@ async function timestep(particles, delta, settings) {
                     connectedParticle.state.connectionFunction = particle.state.connectionFunction
                     connectedParticle.state.updateFunction = particle.state.updateFunction
                     connectedParticle.state.delayFunction = particle.state.delayFunction
+                    while (random() > simulationSettings.mutationChance) {
+                      mutateParticle(connectedParticle)
+                    }
                     connectedParticle.state.updateDelay = 0
                     connectedParticle.state.connectedParticles = []
                     availableEnergy -= settings.reprogramCost
