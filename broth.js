@@ -21,7 +21,7 @@ const DEFAULT_DISPLAY_SETTINGS = {
 }
 
 const DEFAULT_SIMULATION_SETTINGS = {
-  worldSize: 300,
+  worldSize: 600,
   timeDelta: 1 / 120,
   drag: 0,
 
@@ -36,10 +36,12 @@ const DEFAULT_SIMULATION_SETTINGS = {
 
   batteryDefaultEnergy: 10000,
 
-  mutationChance:0.2,
+  mutationChance:0.15,
 
   mutationGaussianFactor:3,
   mutationSizeLambda:0.8,
+
+  clearDelayTime:700,
 
   operations:[
     {
@@ -154,6 +156,7 @@ const ACTION = {
 const ACTION_ROW_SEPARATOR = ACTION.createEnergy
 
 var particles = []
+var simulationState={}
 var simulationSettings = null
 var displaySettings = null
 
@@ -658,21 +661,30 @@ function mutateSexp(sexp,settings) {
 function mutateParticle(particle) {
   switch(int(random()*4)){
     case 0:
-      particle.state.signalFunction=mutateSexp(particle.state.signalFunction)
+      particle.state.signalFunction=mutateSexp(particle.state.signalFunction,simulationSettings)
       break
     case 1:
-      particle.state.connectionFunction=mutateSexp(particle.state.connectionFunction)
+      particle.state.connectionFunction=mutateSexp(particle.state.connectionFunction,simulationSettings)
       break
     case 2:
-      particle.state.updateFunction=mutateSexp(particle.state.updateFunction)
+      particle.state.updateFunction=mutateSexp(particle.state.updateFunction,simulationSettings)
       break
     case 3:
-      particle.state.delayFunction=mutateSexp(particle.state.delayFunction)
+      particle.state.delayFunction=mutateSexp(particle.state.delayFunction,simulationSettings)
       break
   }
 }
 
-async function timestep(particles, delta, settings) {
+async function timestep(particles, state, delta, settings) {
+  var newState={
+    clearDelay:state.clearDelay
+  }
+  newState.clearDelay-=delta
+  if(newState.clearDelay<0){
+    newState.clearDelay+=settings.clearDelayTime
+    clearHalfMap()
+  }
+
   particles = particles.slice()
 
   //Create a copy of the list of particles
@@ -746,7 +758,7 @@ async function timestep(particles, delta, settings) {
                     connectedParticle.state.connectionFunction = particle.state.connectionFunction
                     connectedParticle.state.updateFunction = particle.state.updateFunction
                     connectedParticle.state.delayFunction = particle.state.delayFunction
-                    while (random() > simulationSettings.mutationChance) {
+                    while (random() < simulationSettings.mutationChance) {
                       mutateParticle(connectedParticle)
                     }
                     connectedParticle.state.updateDelay = 0
@@ -904,7 +916,6 @@ async function timestep(particles, delta, settings) {
       }
     }
   }
-  2
 
   //Check if any control particles have the right type of particle in the right place to connect to based on their connection parameters
   for (var particle of newParticles.filter((p) => p.type == PARTICLE.control)) {
@@ -965,7 +976,26 @@ async function timestep(particles, delta, settings) {
     }
   }
 
-  return newParticles
+  return [newParticles,newState]
+}
+
+function clearHalfMap(){
+  var angle=(2*random()-1)*Math.PI
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i]
+    var particleAngle=Math.atan2(p.y-simulationSettings.worldSize/2,p.x-simulationSettings.worldSize/2)
+    var diff=angle-particleAngle
+    diff+=Math.PI
+    while(diff<0){
+      diff+=Math.PI*2
+    }
+    diff%=Math.PI*2
+    diff-=Math.PI
+    if(diff>0){
+      particles[i]=newParticle(p.x,p.y,p.type)
+      copyPos(p.velocity,particles[i].velocity)
+    }
+  }
 }
 
 async function setup() {
@@ -1054,7 +1084,7 @@ async function setup() {
 
   //Initialize  default state
   particles = []
-  var replicatorBinder = newParticle(150, 150, PARTICLE.binder)
+  var replicatorBinder = newParticle(300, 300, PARTICLE.binder)
   particles.push(replicatorBinder)
   replicatorBinder.state.heldParticles = [0, 1 ,2]
   replicatorBinder.state.distances = [
@@ -1063,7 +1093,7 @@ async function setup() {
     [4, 4 * Math.sqrt(2), 4]
   ]
   replicatorBinder.state.range=7
-  var replicatorControl = newParticle(154, 150, PARTICLE.control)
+  var replicatorControl = newParticle(304, 300, PARTICLE.control)
   particles.push(replicatorControl)
   replicatorControl.state.memory = [1]
   replicatorControl.state.connectionParams = [2, 0.5, 10, 2, 13, 3, 10, 2]
@@ -1073,15 +1103,19 @@ async function setup() {
   replicatorControl.state.connectionFunction = "(t_if (t_= state '(-3)) '() (t_if (t_= state '(-2)) '(3 0.5 5 1 5 1) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(1)) '(3 1 15 5 10 2) '(2 -1 5 1)) (t_if (t_= (t_size input) '(2)) '(2 0.5 10 2 13 3 10 2) (t_if (t_= state '(3)) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))"
   replicatorControl.state.updateFunction = "(t_if (t_and (t_= (t_abs state) '(3)) (t_= (t_size input) '(2))) '(1) (t_if (t_= state '(-2)) (t_if (t_= (t_size input) '(3)) '(-3) '(-2)) (t_if (t_= state '(-1)) '(-2) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(2)) '(-1) '(0)) (t_if (t_= state '(2)) '(3) (t_if (t_= state '(1)) (t_if (t_= (t_size input) '(4)) '(2) '(1)) state))))))"
   replicatorControl.state.delayFunction = "(t_if (t_or (t_= state '(-1)) (t_= state '(2))) '(0) '(1))"
-  var replicatorBattery = newParticle(150, 146, PARTICLE.battery)
+  var replicatorBattery = newParticle(300, 296, PARTICLE.battery)
   particles.push(replicatorBattery)
   for (var particleType of [PARTICLE.control, PARTICLE.binder, PARTICLE.battery]) {
-    for (var i = 0; i < 60; i++) {
+    for (var i = 0; i < 240; i++) {
       var particle = newParticle(random() * simulationSettings.worldSize, random() * simulationSettings.worldSize, particleType)
       particle.velocity.x = (random() * 2 - 1) * 6
       particle.velocity.y = (random() * 2 - 1) * 6
       particles.push(particle)
     }
+  }
+
+  simulationState={
+    clearDelay:simulationSettings.clearDelayTime
   }
 
   //Load a default state from JSON. Uncomment this code for local development in which you'd like to automatically load a state from a JSON file
@@ -1099,7 +1133,9 @@ async function draw() {
 
   //Logic
   for (var i = 0; i < displaySettings.timestepsPerFrameBase ** displaySettings.timestepsPerFrameExponent; i++) {
-    particles = await timestep(particles, paused ? 0 : simulationSettings.timeDelta, simulationSettings)
+    var results = await timestep(particles, simulationState, paused ? 0 : simulationSettings.timeDelta, simulationSettings)
+    particles = results[0]
+    simulationState = results[1]
   }
 
   //Input
