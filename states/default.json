@@ -1,120 +1,213 @@
 {
   "settings": {
-    "worldSize": 300,
+    "worldSize": 600,
     "timeDelta": 0.008333333333333333,
-    "drag": 1,
-    "grabberPower": 700,
+    "drag": 0,
+    "binderPower": 700,
     "controlRange": 20,
     "computationCost": 0.1,
-    "grabberRangeEnergyFactor": 0.02,
+    "binderRangeEnergyFactor": 0.02,
     "energyParticleEnergy": 1,
     "reprogramCost": 10,
-    "batteryDefaultEnergy": 10000
+    "batteryDefaultEnergy": 10000,
+    "mutationChance": 0.15,
+    "mutationGaussianFactor": 3,
+    "mutationSizeLambda": 0.8,
+    "clearDelayTime": 700,
+    "operations": [
+      {
+        "name": "t_+",
+        "args": 2
+      },
+      {
+        "name": "t_-",
+        "args": 2
+      },
+      {
+        "name": "t_*",
+        "args": 2
+      },
+      {
+        "name": "t_/",
+        "args": 2
+      },
+      {
+        "name": "t_exp",
+        "args": 2
+      },
+      {
+        "name": "t_sum",
+        "args": 1
+      },
+      {
+        "name": "t_abs",
+        "args": 1
+      },
+      {
+        "name": "t_product",
+        "args": 1
+      },
+      {
+        "name": "t_reverse",
+        "args": 1
+      },
+      {
+        "name": "t_size",
+        "args": 1
+      },
+      {
+        "name": "t_floor",
+        "args": 1
+      },
+      {
+        "name": "t_not",
+        "args": 1
+      },
+      {
+        "name": "t_and",
+        "args": 2
+      },
+      {
+        "name": "t_or",
+        "args": 2
+      },
+      {
+        "name": "t_xor",
+        "args": 2
+      },
+      {
+        "name": "t_concat",
+        "args": 2
+      },
+      {
+        "name": "t_before",
+        "args": 2
+      },
+      {
+        "name": "t_if",
+        "args": 3
+      },
+      {
+        "name": "t_=",
+        "args": 2
+      },
+      {
+        "name": "t_>",
+        "args": 2
+      },
+      {
+        "name": "t_<",
+        "args": 2
+      }
+    ]
   },
-  "particles": [
-    {
-      "id": 0,
-      "x": 150,
-      "y": 150,
-      "velocity": {
-        "x": 0,
-        "y": 0
-      },
-      "type": 2,
-      "radius": 1,
-      "mass": 1,
-      "state": {
-        "range": 7,
-        "heldParticles": [
-          0,
-          1,
-          2
-        ],
-        "distances": [
-          [
+  "state": {
+    "clearDelay": 696.8666666666695,
+    "particles": [
+      {
+        "id": 0,
+        "x": 300,
+        "y": 300,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        },
+        "type": 2,
+        "radius": 1,
+        "mass": 1,
+        "state": {
+          "range": 7,
+          "heldParticles": [
             0,
-            4,
-            4
+            1,
+            2
           ],
-          [
-            4,
-            0,
-            5.656854249492381
-          ],
-          [
-            4,
-            5.656854249492381,
-            0
+          "distances": [
+            [
+              0,
+              4,
+              4
+            ],
+            [
+              4,
+              0,
+              5.656854249492381
+            ],
+            [
+              4,
+              5.656854249492381,
+              4
+            ]
           ]
-        ]
-      }
-    },
-    {
-      "id": 1,
-      "x": 154,
-      "y": 150,
-      "velocity": {
-        "x": 0,
-        "y": 0
+        }
       },
-      "type": 0,
-      "radius": 1,
-      "mass": 1,
-      "state": {
-        "memory": [
-          1
-        ],
-        "connectionParams": [
-          2,
-          0.5,
-          10,
-          2,
-          13,
-          3,
-          10,
-          2
-        ],
-        "signalFunction": "(t_if (t_= state '(-3)) '(7) (t_if (t_= state '(-2)) '(13) (t_if (t_= state '(-1)) '(-1) (t_if (t_= state '(1)) '(7 13) (t_if (t_= state '(2)) '(7 0 0) '())))))",
-        "connectionFunction": "(t_if (t_= state '(-3)) '() (t_if (t_= state '(-2)) '(3 0.5 5 1 5 1) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(1)) '(3 1 15 5 10 2) '(2 -1 5 1)) (t_if (t_= (t_size input) '(2)) '(2 0.5 10 2 13 3 10 2) (t_if (t_= state '(3)) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))",
-        "updateFunction": "(t_if (t_and (t_= (t_abs state) '(3)) (t_= (t_size input) '(2))) '(1) (t_if (t_= state '(-2)) (t_if (t_= (t_size input) '(3)) '(-3) '(-2)) (t_if (t_= state '(-1)) '(-2) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(2)) '(-1) '(0)) (t_if (t_= state '(2)) '(3) (t_if (t_= state '(1)) (t_if (t_= (t_size input) '(4)) '(2) '(1)) state))))))",
-        "delayFunction": "(t_if (t_or (t_= state '(-1)) (t_= state '(2))) '(0) '(1))",
-        "updateDelay": 0.5666666666666682,
-        "connectedParticles": [
-          0,
-          2
-        ]
-      }
-    },
-    {
-      "id": 2,
-      "x": 150,
-      "y": 146,
-      "velocity": {
-        "x": 0,
-        "y": 0
+      {
+        "id": 1,
+        "x": 304,
+        "y": 300,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        },
+        "type": 0,
+        "radius": 1,
+        "mass": 1,
+        "state": {
+          "memory": [
+            1
+          ],
+          "connectionParams": [
+            2,
+            0.5,
+            10,
+            2,
+            13,
+            3,
+            10,
+            2
+          ],
+          "signalFunction": "(t_if (t_= state '(-3)) '(7) (t_if (t_= state '(-2)) '(13) (t_if (t_= state '(-1)) '(-1) (t_if (t_= state '(1)) '(7 13) (t_if (t_= state '(2)) '(7 0 0) '())))))",
+          "connectionFunction": "(t_if (t_= state '(-3)) '() (t_if (t_= state '(-2)) '(3 0.5 5 1 5 1) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(1)) '(3 1 15 5 10 2) '(2 -1 5 1)) (t_if (t_= (t_size input) '(2)) '(2 0.5 10 2 13 3 10 2) (t_if (t_= state '(3)) '() '(0 0.5 0 0 0 0 15 5 5 0.5))))))",
+          "updateFunction": "(t_if (t_and (t_= (t_abs state) '(3)) (t_= (t_size input) '(2))) '(1) (t_if (t_= state '(-2)) (t_if (t_= (t_size input) '(3)) '(-3) '(-2)) (t_if (t_= state '(-1)) '(-2) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(2)) '(-1) '(0)) (t_if (t_= state '(2)) '(3) (t_if (t_= state '(1)) (t_if (t_= (t_size input) '(4)) '(2) '(1)) state))))))",
+          "delayFunction": "(t_if (t_or (t_= state '(-1)) (t_= state '(2))) '(0) '(1))",
+          "updateDelay": 0.8666666666666701,
+          "connectedParticles": [
+            0,
+            2
+          ]
+        }
       },
-      "type": 3,
-      "radius": 1,
-      "mass": 1,
-      "state": {
-        "energy": 9999.9
+      {
+        "id": 2,
+        "x": 300,
+        "y": 296,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        },
+        "type": 3,
+        "radius": 1,
+        "mass": 1,
+        "state": {
+          "energy": 9999.699999999999
+        }
       }
-    }
-  ],
+    ]
+  },
   "randomParticles": [
     {
       "type":0,
-      "count":60,
+      "count":240,
       "velocityFactor":6
     },
     {
       "type":3,
-      "count":60,
+      "count":240,
       "velocityFactor":6
     },
     {
       "type":2,
-      "count":60,
+      "count":240,
       "velocityFactor":6
     }
   ]

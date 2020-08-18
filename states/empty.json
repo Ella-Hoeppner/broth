@@ -1,16 +1,109 @@
 {
   "settings": {
-    "worldSize": 300,
+    "worldSize": 600,
     "timeDelta": 0.008333333333333333,
-    "drag": 1,
-    "grabberPower": 700,
+    "drag": 0,
+    "binderPower": 700,
     "controlRange": 20,
     "computationCost": 0.1,
-    "grabberRangeEnergyFactor": 0.02,
+    "binderRangeEnergyFactor": 0.02,
     "energyParticleEnergy": 1,
     "reprogramCost": 10,
-    "batteryDefaultEnergy": 10000
+    "batteryDefaultEnergy": 10000,
+    "mutationChance": 0.15,
+    "mutationGaussianFactor": 3,
+    "mutationSizeLambda": 0.8,
+    "clearDelayTime": 700,
+    "operations": [
+      {
+        "name": "t_+",
+        "args": 2
+      },
+      {
+        "name": "t_-",
+        "args": 2
+      },
+      {
+        "name": "t_*",
+        "args": 2
+      },
+      {
+        "name": "t_/",
+        "args": 2
+      },
+      {
+        "name": "t_exp",
+        "args": 2
+      },
+      {
+        "name": "t_sum",
+        "args": 1
+      },
+      {
+        "name": "t_abs",
+        "args": 1
+      },
+      {
+        "name": "t_product",
+        "args": 1
+      },
+      {
+        "name": "t_reverse",
+        "args": 1
+      },
+      {
+        "name": "t_size",
+        "args": 1
+      },
+      {
+        "name": "t_floor",
+        "args": 1
+      },
+      {
+        "name": "t_not",
+        "args": 1
+      },
+      {
+        "name": "t_and",
+        "args": 2
+      },
+      {
+        "name": "t_or",
+        "args": 2
+      },
+      {
+        "name": "t_xor",
+        "args": 2
+      },
+      {
+        "name": "t_concat",
+        "args": 2
+      },
+      {
+        "name": "t_before",
+        "args": 2
+      },
+      {
+        "name": "t_if",
+        "args": 3
+      },
+      {
+        "name": "t_=",
+        "args": 2
+      },
+      {
+        "name": "t_>",
+        "args": 2
+      },
+      {
+        "name": "t_<",
+        "args": 2
+      }
+    ]
   },
-  "particles": [],
+  "state": {
+    "clearDelay": 696.8666666666695,
+    "particles": []
+  },
   "randomParticles": []
 }

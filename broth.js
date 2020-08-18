@@ -155,7 +155,6 @@ const ACTION = {
 
 const ACTION_ROW_SEPARATOR = ACTION.createEnergy
 
-var particles = []
 var simulationState={}
 var simulationSettings = null
 var displaySettings = null
@@ -246,7 +245,7 @@ function numberToParticleType(number) {
 }
 
 function newParticle(x, y, type) {
-  maxParticleId = max([-1].concat(particles.map((p) => p.id)))
+  maxParticleId = max([-1].concat(simulationState.particles.map((p) => p.id)))
   particle = {
     id: maxParticleId + 1,
     x: x,
@@ -404,7 +403,7 @@ function stringToNumberList(string) {
 function saveState() {
   var object = {
     settings: simulationSettings,
-    particles: particles,
+    state: simulationState,
     randomParticles: []
   }
   var download = document.createElement("a");
@@ -412,7 +411,7 @@ function saveState() {
     type: "text/plain"
   }));
   var d = new Date()
-  var name = "evosim_"
+  var name = "broth_"
   name += d.getMonth()
   name += "-"
   name += d.getDate()
@@ -432,13 +431,13 @@ function saveState() {
 function loadState(string) {
   var object = JSON.parse(string)
   simulationSettings.settings = object.settings
-  particles = object.particles
+  simulationState = object.state
   for (var particleObject of object.randomParticles) {
     for (var i = 0; i < particleObject.count; i++) {
       var particle = newParticle(random() * simulationSettings.worldSize, random() * simulationSettings.worldSize, particleObject.type)
       particle.velocity.x = (random() * 2 - 1) * particleObject.velocityFactor
       particle.velocity.y = (random() * 2 - 1) * particleObject.velocityFactor
-      particles.push(particle)
+      simulationState.particles.push(particle)
     }
   }
 }
@@ -675,7 +674,7 @@ function mutateParticle(particle) {
   }
 }
 
-async function timestep(particles, state, delta, settings) {
+async function timestep(state, delta, settings) {
   var newState={
     clearDelay:state.clearDelay
   }
@@ -685,7 +684,7 @@ async function timestep(particles, state, delta, settings) {
     clearHalfMap()
   }
 
-  particles = particles.slice()
+  var particles = state.particles.slice()
 
   //Create a copy of the list of particles
   var newParticles = particles.map((p) => copyParticle(p))
@@ -976,13 +975,14 @@ async function timestep(particles, state, delta, settings) {
     }
   }
 
-  return [newParticles,newState]
+  newState.particles=newParticles
+  return newState
 }
 
 function clearHalfMap(){
   var angle=(2*random()-1)*Math.PI
-  for(var i=0;i<particles.length;i++){
-    var p=particles[i]
+  for(var i=0;i<simulationState.particles.length;i++){
+    var p=simulationState.particles[i]
     var particleAngle=Math.atan2(p.y-simulationSettings.worldSize/2,p.x-simulationSettings.worldSize/2)
     var diff=angle-particleAngle
     diff+=Math.PI
@@ -992,8 +992,8 @@ function clearHalfMap(){
     diff%=Math.PI*2
     diff-=Math.PI
     if(diff>0){
-      particles[i]=newParticle(p.x,p.y,p.type)
-      copyPos(p.velocity,particles[i].velocity)
+      simulationState.particles[i]=newParticle(p.x,p.y,p.type)
+      copyPos(p.velocity,simulationState.particles[i].velocity)
     }
   }
 }
@@ -1083,9 +1083,12 @@ async function setup() {
   await lips.exec("(define (t_< a b) (if (or (empty? a) (empty? b)) '() (cons (if (< (car a) (car b)) 1 0) (t_< (cdr a) (cdr b)))))")
 
   //Initialize  default state
-  particles = []
+  simulationState={
+    clearDelay:simulationSettings.clearDelayTime,
+    particles:[]
+  }
   var replicatorBinder = newParticle(300, 300, PARTICLE.binder)
-  particles.push(replicatorBinder)
+  simulationState.particles.push(replicatorBinder)
   replicatorBinder.state.heldParticles = [0, 1 ,2]
   replicatorBinder.state.distances = [
     [0, 4, 4],
@@ -1094,7 +1097,7 @@ async function setup() {
   ]
   replicatorBinder.state.range=7
   var replicatorControl = newParticle(304, 300, PARTICLE.control)
-  particles.push(replicatorControl)
+  simulationState.particles.push(replicatorControl)
   replicatorControl.state.memory = [1]
   replicatorControl.state.connectionParams = [2, 0.5, 10, 2, 13, 3, 10, 2]
   replicatorControl.state.updateDelay = 1
@@ -1104,18 +1107,14 @@ async function setup() {
   replicatorControl.state.updateFunction = "(t_if (t_and (t_= (t_abs state) '(3)) (t_= (t_size input) '(2))) '(1) (t_if (t_= state '(-2)) (t_if (t_= (t_size input) '(3)) '(-3) '(-2)) (t_if (t_= state '(-1)) '(-2) (t_if (t_= state '(0)) (t_if (t_= (t_size input) '(2)) '(-1) '(0)) (t_if (t_= state '(2)) '(3) (t_if (t_= state '(1)) (t_if (t_= (t_size input) '(4)) '(2) '(1)) state))))))"
   replicatorControl.state.delayFunction = "(t_if (t_or (t_= state '(-1)) (t_= state '(2))) '(0) '(1))"
   var replicatorBattery = newParticle(300, 296, PARTICLE.battery)
-  particles.push(replicatorBattery)
+  simulationState.particles.push(replicatorBattery)
   for (var particleType of [PARTICLE.control, PARTICLE.binder, PARTICLE.battery]) {
     for (var i = 0; i < 240; i++) {
       var particle = newParticle(random() * simulationSettings.worldSize, random() * simulationSettings.worldSize, particleType)
       particle.velocity.x = (random() * 2 - 1) * 6
       particle.velocity.y = (random() * 2 - 1) * 6
-      particles.push(particle)
+      simulationState.particles.push(particle)
     }
-  }
-
-  simulationState={
-    clearDelay:simulationSettings.clearDelayTime
   }
 
   //Load a default state from JSON. Uncomment this code for local development in which you'd like to automatically load a state from a JSON file
@@ -1133,9 +1132,7 @@ async function draw() {
 
   //Logic
   for (var i = 0; i < displaySettings.timestepsPerFrameBase ** displaySettings.timestepsPerFrameExponent; i++) {
-    var results = await timestep(particles, simulationState, paused ? 0 : simulationSettings.timeDelta, simulationSettings)
-    particles = results[0]
-    simulationState = results[1]
+    simulationState = await timestep(simulationState, paused ? 0 : simulationSettings.timeDelta, simulationSettings)
   }
 
   //Input
@@ -1161,7 +1158,7 @@ async function draw() {
   displaySettings.scrollY = min(1 - displaySettings.zoom / 2, max(displaySettings.zoom / 2, displaySettings.scrollY))
 
   //Draw each particle
-  for (var particle of particles) {
+  for (var particle of simulationState.particles) {
     var worldP = screenPos(particle, displaySettings)
     var radius = particle.radius * displaySettings.canvasSize / displaySettings.zoom
     switch (particle.type) {
@@ -1193,7 +1190,7 @@ async function draw() {
 
   //Draw UI elements for particles, e.g. circles that display range and lines that display connections between particles
   var scaleFactor = displaySettings.canvasSize / (simulationSettings.worldSize * displaySettings.zoom)
-  for (var particle of particles) {
+  for (var particle of simulationState.particles) {
     var pos = screenPos(particle, displaySettings)
     switch (particle.type) {
       case PARTICLE.binder:
@@ -1205,7 +1202,7 @@ async function draw() {
         circle(pos.x, pos.y, particle.state.range * 2 * scaleFactor)
         if (particle.state.heldParticles != null) {
           for (var id of particle.state.heldParticles) {
-            var otherParticle = findParticle(particles, id)
+            var otherParticle = findParticle(simulationState.particles, id)
             var otherPos = screenPos(otherParticle, displaySettings)
             line(pos.x, pos.y, otherPos.x, otherPos.y)
           }
@@ -1220,7 +1217,7 @@ async function draw() {
           strokeWeight(scaleFactor * 0.2)
           circle(pos.x, pos.y, simulationSettings.controlRange * 2 * scaleFactor)
           for (var id of particle.state.connectedParticles) {
-            var otherParticle = findParticle(particles, id)
+            var otherParticle = findParticle(simulationState.particles, id)
             var otherPos = screenPos(otherParticle, displaySettings)
             line(pos.x, pos.y, otherPos.x, otherPos.y)
           }
@@ -1246,7 +1243,7 @@ async function draw() {
   //Draw fling line
   if (selectedActionIndex == ACTION.fling) {
     if (selectedFlingID != -1) {
-      var particle = findParticle(particles, selectedFlingID)
+      var particle = findParticle(simulationState.particles, selectedFlingID)
       if (particle != null) {
         var start = screenPos(particle, displaySettings)
         stroke(COLORS.ui)
@@ -1262,7 +1259,7 @@ async function draw() {
   //Draw program circle
   if (selectedActionIndex == ACTION.program) {
     if (selectedProgramID != -1) {
-      var particle = findParticle(particles, selectedProgramID)
+      var particle = findParticle(simulationState.particles, selectedProgramID)
       if (particle != null) {
         var pos = screenPos(particle, displaySettings)
         stroke(COLORS.controlStroke)
@@ -1274,7 +1271,7 @@ async function draw() {
 
   //Draw inspect info circle
   if (selectedInspectID != -1) {
-    var particle = findParticle(particles, selectedInspectID)
+    var particle = findParticle(simulationState.particles, selectedInspectID)
     if (particle == null) {
       selectedInspectID = -1
     }
@@ -1286,7 +1283,7 @@ async function draw() {
       switch (particle.type) {
         case PARTICLE.control:
           var params = particle.state.connectionParams.slice(2)
-          var relevantParticles = [particle].concat(particle.state.connectedParticles.map((id) => findParticle(particles, id)))
+          var relevantParticles = [particle].concat(particle.state.connectedParticles.map((id) => findParticle(simulationState.particles, id)))
           var restrictions = []
           for (var i = 0; true; i++) {
             var baseIndex = i * 2
@@ -1508,7 +1505,7 @@ async function draw() {
     internalStateInput.elt.value = ""
     delayInput.elt.value = ""
   } else {
-    var particle = findParticle(particles, selectedProgramID)
+    var particle = findParticle(simulationState.particles, selectedProgramID)
     if (particle == null) {
       selectedProgramID = -1
     }
@@ -1582,23 +1579,23 @@ function mousePressed() {
       }, displaySettings)
       switch (selectedActionIndex) {
         case ACTION.createControl:
-          particles.push(newParticle(pos.x, pos.y, PARTICLE.control))
+          simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.control))
           break
         case ACTION.createGrabber:
-          particles.push(newParticle(pos.x, pos.y, PARTICLE.binder))
+          simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.binder))
           break
         case ACTION.createEnergy:
-          particles.push(newParticle(pos.x, pos.y, PARTICLE.energy))
+          simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.energy))
           break
         case ACTION.createBattery:
-          particles.push(newParticle(pos.x, pos.y, PARTICLE.battery))
+          simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.battery))
           break
         case ACTION.createMover:
-          particles.push(newParticle(pos.x, pos.y, PARTICLE.mover))
+          simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.mover))
           break
         case ACTION.fling:
           var closestSquareDistance = Infinity
-          for (var particle of particles) {
+          for (var particle of simulationState.particles) {
             var squareD = squareDist(pos, particle)
             if (squareD < closestSquareDistance) {
               closestSquareDistance = squareD
@@ -1609,20 +1606,20 @@ function mousePressed() {
         case ACTION.destroyParticle:
           var closestSquareDistance = Infinity
           var closestIndex = -1
-          for (var i = 0; i < particles.length; i++) {
-            var squareD = squareDist(pos, particles[i])
+          for (var i = 0; i < simulationState.particles.length; i++) {
+            var squareD = squareDist(pos, simulationState.particles[i])
             if (squareD < closestSquareDistance) {
               closestSquareDistance = squareD
               closestIndex = i
             }
           }
           if (closestIndex != -1) {
-            particles.splice(closestIndex, 1)
+            simulationState.particles.splice(closestIndex, 1)
           }
           break
         case ACTION.program:
           var closestSquareDistance = Infinity
-          for (var particle of particles) {
+          for (var particle of simulationState.particles) {
             if (particle.type == PARTICLE.control) {
               var squareD = squareDist(pos, particle)
               if (squareD < closestSquareDistance) {
@@ -1632,7 +1629,7 @@ function mousePressed() {
             }
           }
           if (selectedProgramID != -1) {
-            var particle = findParticle(particles, selectedProgramID)
+            var particle = findParticle(simulationState.particles, selectedProgramID)
             updateFunctionInput.elt.value = particle.state.updateFunction
             connectionFunctionInput.elt.value = particle.state.connectionFunction
             signalFunctionInput.elt.value = particle.state.signalFunction
@@ -1643,7 +1640,7 @@ function mousePressed() {
           break
         case ACTION.inspect:
           var closestSquareDistance = Infinity
-          for (var particle of particles) {
+          for (var particle of simulationState.particles) {
             var squareD = squareDist(pos, particle)
             if (squareD < closestSquareDistance) {
               closestSquareDistance = squareD
@@ -1660,7 +1657,7 @@ function mouseReleased() {
   switch (selectedActionIndex) {
     case ACTION.fling:
       if (selectedFlingID != -1) {
-        var particle = findParticle(particles, selectedFlingID)
+        var particle = findParticle(simulationState.particles, selectedFlingID)
         var end = worldPos({
           x: mouseX,
           y: mouseY
