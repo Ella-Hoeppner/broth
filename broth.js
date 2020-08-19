@@ -173,6 +173,8 @@ var delayFunctionInput = null
 var internalStateInput = null
 var delayInput = null
 
+var sexpFunctions={}
+
 function normalRandom(factor){
   return factor*Math.sqrt(-2*Math.log(random()))*Math.cos(2*Math.PI*random())
 }
@@ -205,34 +207,6 @@ function addVectors(v1, v2) {
 
 function subtractVectors(v1, v2) {
   return addVectors(v1, scaleVector(v2, -1))
-}
-
-function lispNumberToNumber(number) {
-  var newNum = Number(number)
-  if (isNaN(newNum)) {
-    return 0
-  }
-  return newNum
-}
-
-function lispListToArray(list) {
-  if (list == null) {
-    return []
-  }
-  var newList = []
-  while (list.car != null) {
-    newList.push(lispNumberToNumber(list.car))
-    list = list.cdr
-  }
-  return newList
-}
-
-function arrayToLispList(array) {
-  var list = ""
-  for (var x of array) {
-    list += x.toString() + " "
-  }
-  return "'(" + list + ")"
 }
 
 function numberToParticleType(number) {
@@ -464,7 +438,7 @@ function findParticle(particleList, id) {
   return null
 }
 
-function lispStringToArray(str) {
+function sexpToArray(str) {
   if(str[0]=="'"){
     if(str.length==3){
       return []
@@ -484,20 +458,23 @@ function lispStringToArray(str) {
         depth--
       }
       if(depth==0 && str[i]==" "){
-        array.push(lispStringToArray(currentSubStr))
+        array.push(sexpToArray(currentSubStr))
         currentSubStr=""
       }
       else{
         currentSubStr+=str[i]
       }
     }
-    array.push(lispStringToArray(currentSubStr))
+    array.push(sexpToArray(currentSubStr))
     return array
   }
   return str
 }
 
-function arrayToLispString(array) {
+function arrayToSexp(array) {
+  if(!Array.isArray(array)){
+    return array
+  }
   var str="("
   if(array.length==0 || !isNaN(array[0])){
     str="'("
@@ -505,7 +482,7 @@ function arrayToLispString(array) {
   for (var i = 0; i < array.length; i++) {
     var element=array[i]
     if(Array.isArray(element)){
-      str+=arrayToLispString(element)
+      str+=arrayToSexp(element)
     }
     else{
       str+=element.toString()
@@ -538,12 +515,12 @@ function mutateSexp(sexp,settings) {
     return arr
   }
 
-  //Convert Lisp string into an array for easier manipulation
-  var array=lispStringToArray(sexp)
+  // Convert sexp into an array for easier manipulation
+  var array=sexpToArray(sexp)
 
   var choice=random()
   if(choice<1/3){
-    //Pick a random location and replace the subtree there with a new, randomly generated subtree
+    // Pick a random location and replace the subtree there with a new, randomly generated subtree
     var locations=getLocations(array,[])
     var chosenLocation=locations[int(random()*locations.length)]
 
@@ -558,15 +535,15 @@ function mutateSexp(sexp,settings) {
     var subChoice=random()
     var subtree=[]
     if(subChoice<1/3){
-      //Replace the subtree at the chosen location with a list of random floats
+      // Replace the subtree at the chosen location with a list of random floats
       subtree='input'
     }
     if(subChoice<2/3){
-      //Replace the subtree at the chosen location with a list of random floats
+      // Replace the subtree at the chosen location with a list of random floats
       subtree=randomFloatList()
     }
     else{
-      //Replace the subtree at the chosen location with a subtree consisting of a random function with random lists of floats, or inputs, as arguments
+      // Replace the subtree at the chosen location with a subtree consisting of a random function with random lists of floats, or inputs, as arguments
       var chosenFunction=settings.operations[int(random()*settings.operations.length)]
       subtree.push(chosenFunction.name)
       for(var i=0;i<chosenFunction.args;i++){
@@ -579,7 +556,7 @@ function mutateSexp(sexp,settings) {
       }
     }
 
-    //Place the constructed subtree at the chosen location
+    // Place the constructed subtree at the chosen location
     if(chosenLocation.length==0){
       array=subtree
     }
@@ -589,34 +566,34 @@ function mutateSexp(sexp,settings) {
     }
   }
   else if(choice<2/3){
-    //Pick two random locations, and then replace the subtree at one location with the subtree at the other location
+    // Pick two random locations, and then replace the subtree at one location with the subtree at the other location
     var locations=getLocations(array,[])
     var fromLocation=locations[int(random()*locations.length)]
     var toLocation=locations[int(random()*locations.length)]
 
-    function copyLispArray(arr){
+    function copySexpArray(arr){
       if(!Array.isArray(arr)){
         return arr
       }
       var newArr=[]
       for(var i=0;i<arr.length;i++){
-        newArr.push(copyLispArray(arr[i]))
+        newArr.push(copySexpArray(arr[i]))
       }
       return newArr
     }
 
-    var fromArray=copyLispArray(arrayAt(array,fromLocation))
+    var fromArray=copySexpArray(arrayAt(array,fromLocation))
 
     if(toLocation.length==0){
       array=fromArray
     }
     else{
-      toParentArray=arrayAt(array,toLocation.slice(0,-1))
+      var toParentArray=arrayAt(array,toLocation.slice(0,-1))
       toParentArray[toLocation.slice(-1)[0]]=fromArray
     }
   }
   else{
-    //Pick a random list of floats and modify it
+    // Pick a random list of floats and modify it
     var initialLocations=getLocations(array,[])
     var locations=[]
     for(var i=0;i<initialLocations.length;i++){
@@ -632,19 +609,19 @@ function mutateSexp(sexp,settings) {
 
       var subChoice=random()
       if(subChoice<0){
-        //Add a random float to the list at a random location
+        // Add a random float to the list at a random location
         var index=int(random()*(subArray.length+1))
         subArray.splice(index,0,normalRandom(settings.mutationGaussianFactor))
       }
       else if(subChoice<2/3){
-        //Remove a random float from the list
+        // Remove a random float from the list
         if(subArray.length>0){
           var index=int(random()*subArray.length)
           subArray.splice(index,1)
         }
       }
       else{
-        //Change a random float in the list
+        // Change a random float in the list
         if(subArray.length>0){
           var index=int(random()*subArray.length)
           subArray[index]+=normalRandom(settings.mutationGaussianFactor)
@@ -653,8 +630,8 @@ function mutateSexp(sexp,settings) {
     }
   }
 
-  //Convert the array back into a Lisp string
-  return arrayToLispString(array)
+  // Convert the array back into an S-expression
+  return arrayToSexp(array)
 }
 
 function mutateParticle(particle) {
@@ -686,10 +663,10 @@ async function timestep(state, delta, settings) {
 
   var particles = state.particles.slice()
 
-  //Create a copy of the list of particles
+  // Create a copy of the list of particles
   var newParticles = particles.map((p) => copyParticle(p))
 
-  //Decrement delays for control particles, and run updates when necessary
+  // Decrement delays for control particles, and run updates when necessary
   for (var particle of newParticles) {
     if (particle.type == PARTICLE.control) {
       particle.state.updateDelay -= delta
@@ -703,10 +680,6 @@ async function timestep(state, delta, settings) {
             input.push(connectedParticle.type)
           }
         }
-        var variables = {
-          "state": arrayToLispList(particle.state.memory),
-          "input": "'(" + input.toString().replace(/,/g, " ") + ")"
-        }
         while (particle.state.updateDelay <= 0) {
           if (availableEnergy < settings.computationCost) {
             break
@@ -716,13 +689,13 @@ async function timestep(state, delta, settings) {
           }
           availableEnergy = connectedBatteries.map((b) => b.state.energy).reduce((a, b) => a + b, 0)
           var variables = {
-            "state": arrayToLispList(particle.state.memory),
-            "input": "'(" + input.toString().replace(/,/g, " ") + ")"
+            "state": particle.state.memory,
+            "input": input
           }
-          particle.state.memory = lispListToArray((await lips.exec(prependVariables(particle.state.updateFunction, variables)))[0])
-          variables["state"] = arrayToLispList(particle.state.memory)
-          particle.state.updateDelay += max(0, lispListToArray((await lips.exec(prependVariables(particle.state.delayFunction, variables)))[0])[0])
-          var signal = lispListToArray((await lips.exec(prependVariables(particle.state.signalFunction, variables)))[0])
+          particle.state.memory = execSexp(particle.state.updateFunction,variables,sexpFunctions)
+          variables["state"] = particle.state.memory
+          particle.state.updateDelay += max(0, execSexp(particle.state.delayFunction,variables,sexpFunctions))
+          var signal = execSexp(particle.state.signalFunction, variables, sexpFunctions)
           for (var i = 0; i < particle.state.connectedParticles.length; i++) {
             var connectedParticle = findParticle(newParticles, particle.state.connectedParticles[i])
             switch (connectedParticle.type) {
@@ -774,17 +747,17 @@ async function timestep(state, delta, settings) {
             }
           }
         }
-        particle.state.connectionParams = lispListToArray((await lips.exec(prependVariables(particle.state.connectionFunction, variables)))[0])
+        particle.state.connectionParams = execSexp(particle.state.connectionFunction,{"state": particle.state.memory,"input": input},sexpFunctions)
       }
     }
   }
 
-  //Update particle position based on velocity
+  // Update particle position based on velocity
   for (var particle of newParticles) {
     moveParticle(particle, delta)
   }
 
-  //Check for collisions off of walls and bounce particles
+  // Check for collisions off of walls and bounce particles
   for (var i = 0; i < particles.length; i++) {
     var particle = particles[i]
     var newParticle = newParticles[i]
@@ -806,7 +779,7 @@ async function timestep(state, delta, settings) {
     }
   }
 
-  //Check for collisions between energy particles and other particles, and destroy the energy particles and give energy to the nearest battery
+  // Check for collisions between energy particles and other particles, and destroy the energy particles and give energy to the nearest battery
   for (var i = 0; i < newParticles.length; i++) {
     var particle = newParticles[i]
     if (particle.type == PARTICLE.energy) {
@@ -824,7 +797,7 @@ async function timestep(state, delta, settings) {
     }
   }
 
-  //Check for collisions between particles, and make them bounce
+  // Check for collisions between particles, and make them bounce
   for (var i = 0; i < newParticles.length; i++) {
     var oldParticle = particles[i]
     var particle = newParticles[i]
@@ -867,15 +840,15 @@ async function timestep(state, delta, settings) {
     }
   }
 
-  //Apply drag to particles
+  // Apply drag to particles
   for (var particle of newParticles) {
     copyPos(scaleVector(particle.velocity, (1 - settings.drag) ** delta), particle.velocity)
   }
 
-  //Make binder particles grab nearby particles if they've just been activated, or influence the velocity of particles they've already grabbed
+  // Make binder particles grab nearby particles if they've just been activated, or influence the velocity of particles they've already grabbed
   for (var particle of newParticles.filter((particle) => particle.type == PARTICLE.binder)) {
     for (var i = 0; i < particle.state.heldParticles.length; i++) {
-      //For each held particle, check if it is outside the range of the binder, and if so, release it
+      // For each held particle, check if it is outside the range of the binder, and if so, release it
       var heldParticle = findParticle(newParticles, particle.state.heldParticles[i])
       if (heldParticle == null || squareDist(particle, heldParticle) > particle.state.range * particle.state.range) {
         particle.state.heldParticles.splice(i, 1)
@@ -905,7 +878,7 @@ async function timestep(state, delta, settings) {
     }
   }
 
-  //Disconnect particles connected to control particles that have moved out of range
+  // Disconnect particles connected to control particles that have moved out of range
   for (var particle of newParticles.filter((particle) => particle.type == PARTICLE.control)) {
     for (var i = 0; i < particle.state.connectedParticles.length; i++) {
       var connectedParticle = findParticle(newParticles, particle.state.connectedParticles[i])
@@ -916,7 +889,7 @@ async function timestep(state, delta, settings) {
     }
   }
 
-  //Check if any control particles have the right type of particle in the right place to connect to based on their connection parameters
+  // Check if any control particles have the right type of particle in the right place to connect to based on their connection parameters
   for (var particle of newParticles.filter((p) => p.type == PARTICLE.control)) {
     var params = particle.state.connectionParams.slice()
     if (params.length >= 4) {
@@ -998,18 +971,55 @@ function clearHalfMap(){
   }
 }
 
+function execSexp(sexp,variables,functions) {
+  if(variables[sexp]!=null){
+    return variables[sexp]
+  }
+
+  if(sexp[0]=="'"){
+    var listString=sexp.slice(2,-1)
+    var valueStrings=listString.split(" ")
+    if(valueStrings.length==1 && valueStrings[0]==""){
+      return []
+    }
+    return valueStrings.map(s=>Number(s))
+  }
+
+  var subSexps=[]
+  var currentSubSexp=""
+  var depth=0
+  for(var i=1;i<sexp.length-1;i++){
+    if(sexp[i]=="("){
+      depth++
+    }
+    if(sexp[i]==")"){
+      depth--
+    }
+    if(depth==0 && sexp[i]==" "){
+      subSexps.push(currentSubSexp)
+      currentSubSexp=""
+    }
+    else{
+      currentSubSexp+=sexp[i]
+    }
+  }
+  subSexps.push(currentSubSexp)
+
+  return functions[subSexps[0]](subSexps.slice(1).map(s=>execSexp(s,variables,functions)))
+}
+
 async function setup() {
   color(50, 80, 80)
 
-  //Define settings
+  // Define settings
   simulationSettings = Object.assign({}, DEFAULT_SIMULATION_SETTINGS)
   displaySettings = Object.assign({}, DEFAULT_DISPLAY_SETTINGS)
 
-  //Basic p5.js setup
+  // Basic p5.js setup
   createCanvas(displaySettings.canvasSize, displaySettings.canvasSize)
   frameRate(displaySettings.framerate)
 
-  //Create text inputs
+  // Create text inputs
   createElement('br')
   var saveButton = createButton('Save State')
   saveButton.mousePressed(saveState)
@@ -1029,7 +1039,7 @@ async function setup() {
   createElement('h5', 'Current Delay')
   delayInput = createElement('textarea')
 
-  //Define colors
+  // Define colors
   COLORS.background = color(0, 0, 0)
 
   COLORS.ui = color(255, 255, 255)
@@ -1051,38 +1061,167 @@ async function setup() {
   COLORS.moverFill = color(140, 80, 80)
   COLORS.moverStroke = color(220, 120, 120)
 
-  //Define lisp helper functions
-  await lips.exec("(define (before l n) (if (or (<= n 0) (empty? l)) '() (cons (car l) (before (cdr l) (1- n)))))")
-  lips.env.set('expt',function(a,b){
-    if(a<0){
-      return 0
+  // Define basic operations for use in control particle code
+  sexpFunctions["t_before"]=function(x){
+    var list=x[0]
+    var indexList=x[1]
+    if(indexList.length==0){
+      return []
     }
-    return a**b
-  })
+    return list.slice(0,int(indexList[0]))
+  }
+  sexpFunctions["t_+"]=function(x){
+    var a1=x[0]
+    var a2=x[0]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]+a2[i])
+    }
+    return list
+  }
+  sexpFunctions["t_-"]=function(x){
+    var a1=x[0]
+    var a2=x[0]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]-a2[i])
+    }
+    return list
+  }
+  sexpFunctions["t_*"]=function(x){
+    var a1=x[0]
+    var a2=x[0]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]*a2[i])
+    }
+    return list
+  }
+  sexpFunctions["t_/"]=function(x){
+    var a1=x[0]
+    var a2=x[0]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      if(a2[i]==0){
+        list.push(0)
+      }
+      else{
+        list.push(a1[i]/a2[i])
+      }
+    }
+    return list
+  }
+  sexpFunctions["t_exp"]=function(x){
+    var a1=x[0]
+    var a2=x[0]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      if(a1[i]<=0){
+        list.push(0)
+      }
+      else{
+        list.push(a1[i]**a2[i])
+      }
+    }
+    return list
+  }
+  sexpFunctions["t_sum"]=function(x){
+    return [x[0].reduce((s,a)=>s+a,1)]
+  }
+  sexpFunctions["t_abs"]=function(x){
+    return x[0].map(a=>abs(a))
+  }
+  sexpFunctions["t_product"]=function(x){
+    return [x[0].reduce((s,a)=>s*a,1)]
+  }
+  sexpFunctions["t_reverse"]=function(x){
+    return x[0].slice().reverse()
+  }
+  sexpFunctions["t_size"]=function(x){
+    return [x[0].length]
+  }
+  sexpFunctions["t_floor"]=function(x){
+    return x[0].map(floor)
+  }
+  sexpFunctions["t_not"]=function(x){
+    return x[0].map(n=>n>0?0:1)
+  }
+  sexpFunctions["t_and"]=function(x){
+    var a1=x[0]
+    var a2=x[1]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]>0 && a2[i]>0?1:0)
+    }
+    return list
+  }
+  sexpFunctions["t_or"]=function(x){
+    var a1=x[0]
+    var a2=x[1]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]>0 || a2[i]>0?1:0)
+    }
+    return list
+  }
+  sexpFunctions["t_xor"]=function(x){
+    function xor(a,b){
+      return (a||b) && !(a&&b)
+    }
+    var a1=x[0]
+    var a2=x[1]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(xor(a1[i]>0,a2[i]>0)?1:0)
+    }
+    return list
+  }
+  sexpFunctions["t_concat"]=function(x){
+    return x[0].concat(x[1])
+  }
+  sexpFunctions["t_if"]=function(x){
+    return x[0][0]>0?x[1]:x[2]
+  }
+  sexpFunctions["t_="]=function(x){
+    var a1=x[0]
+    var a2=x[1]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]==a2[i]?1:0)
+    }
+    return list
+  }
+  sexpFunctions["t_>"]=function(x){
+    var a1=x[0]
+    var a2=x[1]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]>a2[i]?1:0)
+    }
+    return list
+  }
+  sexpFunctions["t_<"]=function(x){
+    var a1=x[0]
+    var a2=x[1]
+    var length=min(a1.length,a2.length)
+    var list=[]
+    for(var i=0;i<length;i++){
+      list.push(a1[i]<a2[i]?1:0)
+    }
+    return list
+  }
 
-  await lips.exec("(define (t_+ a b) (if (or (empty? a) (empty? b)) '() (cons (+ (car a) (car b)) (t_+ (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_- a b) (if (or (empty? a) (empty? b)) '() (cons (- (car a) (car b)) (t_- (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_* a b) (if (or (empty? a) (empty? b)) '() (cons (* (car a) (car b)) (t_* (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_/ a b) (if (or (empty? a) (empty? b)) '() (cons (/ (car a) (car b)) (t_/ (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_exp a b) (if (or (empty? a) (empty? b)) '() (cons (expt (car a) (car b)) (t_exp (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_sum a) (list (apply + a)))")
-  await lips.exec("(define (t_abs a) (list (apply abs a)))")
-  await lips.exec("(define (t_product a) (list (apply * a)))")
-  await lips.exec("(define (t_reverse a) (reverse a))")
-  await lips.exec("(define (t_size a) (list (if (empty? a) 0 (1+ (car (t_size (cdr a)))))))")
-  await lips.exec("(define (t_floor a) (if (empty? a) '() (cons (floor (car a)) (t_floor (cdr a)))))")
-  await lips.exec("(define (t_not a) (map (lambda (x) (if (> x 0) '0 '1)) a))")
-  await lips.exec("(define (t_and a b) (if (or (empty? a) (empty? b)) '() (cons (if (and (> (car a) 0) (> (car b) 0)) 1 0) (t_and (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_or a b) (if (or (empty? a) (empty? b)) '() (cons (if (or (> (car a) 0) (> (car b) 0)) 1 0) (t_or (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_xor a b) (t_and (t_or a b) (t_not (t_and a b))))")
-  await lips.exec("(define (t_concat a b) (append a b))")
-  await lips.exec("(define (t_before a b) (if (> (car b) 0) (before a (car b)) (before (reverse a) (- (car b)))))")
-  await lips.exec("(define (t_if a b c) (if (> (car a) 0) b c))")
-  await lips.exec("(define (t_= a b) (if (or (empty? a) (empty? b)) '() (cons (if (== (car a) (car b)) 1 0) (t_= (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_> a b) (if (or (empty? a) (empty? b)) '() (cons (if (> (car a) (car b)) 1 0) (t_> (cdr a) (cdr b)))))")
-  await lips.exec("(define (t_< a b) (if (or (empty? a) (empty? b)) '() (cons (if (< (car a) (car b)) 1 0) (t_< (cdr a) (cdr b)))))")
-
-  //Initialize  default state
+  // Initialize  default state
   simulationState={
     clearDelay:simulationSettings.clearDelayTime,
     particles:[]
@@ -1117,25 +1256,24 @@ async function setup() {
     }
   }
 
-  //Load a default state from JSON. Uncomment this code for local development in which you'd like to automatically load a state from a JSON file
+  // Load a default state from JSON. Uncomment this code for local development in which you'd like to automatically load a state from a JSON file
   /*var client = new XMLHttpRequest()
-  client.open('GET', '/states/default.json')
+  client.open('GET', '/states/empty.json')
   client.onload = function() {
     loadState(client.responseText)
   }
   client.send()*/
 }
 
-
 async function draw() {
   paused |= selectedProgramID != -1
 
-  //Logic
+  // Logic
   for (var i = 0; i < displaySettings.timestepsPerFrameBase ** displaySettings.timestepsPerFrameExponent; i++) {
     simulationState = await timestep(simulationState, paused ? 0 : simulationSettings.timeDelta, simulationSettings)
   }
 
-  //Input
+  // Input
   if (!inTextBox()) {
     if (keyIsDown(UP_ARROW) || keyIsDown('W'.charCodeAt(0))) {
       displaySettings.scrollY -= displaySettings.zoom * displaySettings.scrollFactor / displaySettings.framerate
@@ -1153,11 +1291,11 @@ async function draw() {
 
   background(COLORS.background)
 
-  //Ensure that scroll and zoom are such that they user cannot see outside of the world
+  // Ensure that scroll and zoom are such that they user cannot see outside of the world
   displaySettings.scrollX = min(1 - displaySettings.zoom / 2, max(displaySettings.zoom / 2, displaySettings.scrollX))
   displaySettings.scrollY = min(1 - displaySettings.zoom / 2, max(displaySettings.zoom / 2, displaySettings.scrollY))
 
-  //Draw each particle
+  // Draw each particle
   for (var particle of simulationState.particles) {
     var worldP = screenPos(particle, displaySettings)
     var radius = particle.radius * displaySettings.canvasSize / displaySettings.zoom
@@ -1188,7 +1326,7 @@ async function draw() {
     circle(worldP.x, worldP.y, radius * 2 / simulationSettings.worldSize)
   }
 
-  //Draw UI elements for particles, e.g. circles that display range and lines that display connections between particles
+  // Draw UI elements for particles, e.g. circles that display range and lines that display connections between particles
   var scaleFactor = displaySettings.canvasSize / (simulationSettings.worldSize * displaySettings.zoom)
   for (var particle of simulationState.particles) {
     var pos = screenPos(particle, displaySettings)
@@ -1225,7 +1363,7 @@ async function draw() {
     }
   }
 
-  //Draw minimap
+  // Draw minimap
   noFill()
   strokeWeight(displaySettings.canvasSize * 0.005)
   var dimmedStroke = color(COLORS.ui.levels)
@@ -1240,7 +1378,7 @@ async function draw() {
   rect(mapOrigin.x, mapOrigin.y, mapWidth, mapWidth)
   rect(mapOrigin.x + displaySettings.scrollX * mapWidth - zoomedWidth / 2, mapOrigin.y + displaySettings.scrollY * mapWidth - zoomedWidth / 2, zoomedWidth, zoomedWidth)
 
-  //Draw fling line
+  // Draw fling line
   if (selectedActionIndex == ACTION.fling) {
     if (selectedFlingID != -1) {
       var particle = findParticle(simulationState.particles, selectedFlingID)
@@ -1256,7 +1394,7 @@ async function draw() {
     }
   }
 
-  //Draw program circle
+  // Draw program circle
   if (selectedActionIndex == ACTION.program) {
     if (selectedProgramID != -1) {
       var particle = findParticle(simulationState.particles, selectedProgramID)
@@ -1269,7 +1407,7 @@ async function draw() {
     }
   }
 
-  //Draw inspect info circle
+  // Draw inspect info circle
   if (selectedInspectID != -1) {
     var particle = findParticle(simulationState.particles, selectedInspectID)
     if (particle == null) {
@@ -1335,7 +1473,7 @@ async function draw() {
     }
   }
 
-  //Draw actions
+  // Draw actions
   for (var a in ACTION) {
     var index = ACTION[a]
     noFill()
@@ -1422,7 +1560,7 @@ async function draw() {
     }
   }
 
-  //Draw speed icons
+  // Draw speed icons
   var dimmedStroke = color(COLORS.ui.levels)
   dimmedStroke.setAlpha(75)
   stroke(dimmedStroke)
@@ -1463,7 +1601,7 @@ async function draw() {
   textAlign(RIGHT, CENTER)
   text(displaySettings.timestepsPerFrameBase ** displaySettings.timestepsPerFrameExponent, downX - size / 4, y + size / 2)
 
-  //Draw pause icon
+  // Draw pause icon
   var dimmedStroke = color(COLORS.ui.levels)
   dimmedStroke.setAlpha(75)
   stroke(dimmedStroke)
@@ -1488,16 +1626,16 @@ async function draw() {
     rect(x + 0.55 * size, y + 0.25 * size, 0.2 * size, 0.5 * size)
   }
 
-  //Display framerate
+  // Display framerate
   noStroke()
   fill(COLORS.ui)
   textAlign(LEFT, TOP)
   textSize(displaySettings.canvasSize * 0.02)
   text(frameRate().toFixed(1), displaySettings.canvasSize * 0.02, displaySettings.canvasSize * 0.02)
 
-  //Handle text input from text areas
+  // Handle text input from text areas
   if (selectedProgramID == -1) {
-    //Clear text area inputs if no control particle is selected
+    // Clear text area inputs if no control particle is selected
     updateFunctionInput.elt.value = ""
     connectionFunctionInput.elt.value = ""
     signalFunctionInput.elt.value = ""
