@@ -801,16 +801,16 @@ async function timestep(state, delta, settings) {
         var dist = Math.sqrt(squareD)
         var oldDist = Math.sqrt(squareDist(oldParticle, oldParticle2))
         var moveProp = (radiusSum - oldDist) / (dist - oldDist)
-        var offset = subtractVectors(particle2, particle)
         if (moveProp >= 0 && moveProp < 1) {
           copyPos(tweenVectors(oldParticle, particle, moveProp), particle)
           copyPos(tweenVectors(oldParticle2, particle2, moveProp), particle2)
         } else {
-          var overlap = scaleVector(offset, (dist - radiusSum) / dist)
+          var overlap = scaleVector(subtractVectors(particle2, particle), (dist - radiusSum) / dist)
           var totalMass = particle.mass + particle2.mass
           copyPos(addVectors(particle, scaleVector(overlap, particle2.mass / totalMass)), particle)
           copyPos(addVectors(particle2, scaleVector(overlap, -particle.mass / totalMass)), particle2)
         }
+        var offset = subtractVectors(particle2, particle)
         var contactAngle = Math.atan2(offset.y, offset.x)
         var particleSpeed = Math.sqrt(particle.velocity.x * particle.velocity.x + particle.velocity.y * particle.velocity.y)
         var particle2Speed = Math.sqrt(particle2.velocity.x * particle2.velocity.x + particle2.velocity.y * particle2.velocity.y)
