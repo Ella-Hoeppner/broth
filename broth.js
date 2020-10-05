@@ -1062,7 +1062,7 @@ async function setup() {
   }
   sexpFunctions["t_+"] = function(x) {
     var a1 = x[0]
-    var a2 = x[0]
+    var a2 = x[1]
     var length = min(a1.length, a2.length)
     var list = []
     for (var i = 0; i < length; i++) {
@@ -1072,7 +1072,7 @@ async function setup() {
   }
   sexpFunctions["t_-"] = function(x) {
     var a1 = x[0]
-    var a2 = x[0]
+    var a2 = x[1]
     var length = min(a1.length, a2.length)
     var list = []
     for (var i = 0; i < length; i++) {
@@ -1082,7 +1082,7 @@ async function setup() {
   }
   sexpFunctions["t_*"] = function(x) {
     var a1 = x[0]
-    var a2 = x[0]
+    var a2 = x[1]
     var length = min(a1.length, a2.length)
     var list = []
     for (var i = 0; i < length; i++) {
@@ -1092,7 +1092,7 @@ async function setup() {
   }
   sexpFunctions["t_/"] = function(x) {
     var a1 = x[0]
-    var a2 = x[0]
+    var a2 = x[1]
     var length = min(a1.length, a2.length)
     var list = []
     for (var i = 0; i < length; i++) {
@@ -1106,7 +1106,7 @@ async function setup() {
   }
   sexpFunctions["t_exp"] = function(x) {
     var a1 = x[0]
-    var a2 = x[0]
+    var a2 = x[1]
     var length = min(a1.length, a2.length)
     var list = []
     for (var i = 0; i < length; i++) {
