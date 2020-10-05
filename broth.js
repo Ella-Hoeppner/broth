@@ -682,7 +682,10 @@ async function timestep(state, delta, settings) {
           }
           particle.state.memory = execSexp(particle.state.updateFunction, variables, sexpFunctions)
           variables["state"] = particle.state.memory
-          particle.state.updateDelay += max(0, execSexp(particle.state.delayFunction, variables, sexpFunctions))
+          var newDelay = execSexp(particle.state.delayFunction, variables, sexpFunctions)[0]
+          if (!isNaN(newDelay)) {
+            particle.state.updateDelay += newDelay
+          }
           var signal = execSexp(particle.state.signalFunction, variables, sexpFunctions)
           for (var i = 0; i < particle.state.connectedParticles.length; i++) {
             var connectedParticle = findParticle(newParticles, particle.state.connectedParticles[i])
