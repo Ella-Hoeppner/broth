@@ -944,18 +944,11 @@ async function timestep(state, delta, settings) {
 }
 
 function clearHalfMap() {
-  var angle = (2 * random() - 1) * Math.PI
+  var clearX = (random() * simulationSettings.worldSize)
   for (var i = 0; i < simulationState.particles.length; i++) {
     var p = simulationState.particles[i]
-    var particleAngle = Math.atan2(p.y - simulationSettings.worldSize / 2, p.x - simulationSettings.worldSize / 2)
-    var diff = angle - particleAngle
-    diff += Math.PI
-    while (diff < 0) {
-      diff += Math.PI * 2
-    }
-    diff %= Math.PI * 2
-    diff -= Math.PI
-    if (diff > 0) {
+    var diffX = (p.x - clearX) / simulationState.worldSize
+    if (((diffX % 1) + 1) % 1 > 0.5) {
       simulationState.particles[i] = newParticle(p.x, p.y, p.type)
       copyPos(p.velocity, simulationState.particles[i].velocity)
     }
