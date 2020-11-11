@@ -26,6 +26,7 @@ const DEFAULT_SIMULATION_SETTINGS = {
   drag: 0,
 
   binderPower: 700,
+  binderDrag: 0.01,
 
   controlRange: 20,
 
@@ -298,6 +299,15 @@ function copyParticle(particle) {
 
 function moveParticle(particle, delta) {
   copyPos(addVectors(particle, scaleVector(particle.velocity, delta)), particle)
+}
+
+function dotProduct(v1, v2) {
+  return v1.x * v2.x + v1.y * v2.y
+}
+
+
+function projectVector(v1, v2) {
+  return scaleVector(v2, dotProduct(v1, v2) / dotProduct(v2, v2))
 }
 
 function squareDist(p1, p2) {
@@ -858,6 +868,7 @@ async function timestep(state, delta, settings) {
       for (var i2 = 0; i2 < particle.state.heldParticles.length; i2++) {
         if (i != i2) {
           var heldParticle2 = findParticle(newParticles, particle.state.heldParticles[i2])
+          // For each pair of held particles, push/pull the particles to move them towarsd their ideal distance
           var properDistance = particle.state.distances[i][i2]
           var realDistance = Math.sqrt(squareDist(heldParticle, heldParticle2))
           var difference = (realDistance - properDistance)
@@ -867,6 +878,16 @@ async function timestep(state, delta, settings) {
           }
           copyPos(addVectors(heldParticle.velocity, scaleVector(offset, delta * settings.binderPower * difference / (realDistance * heldParticle.mass))), heldParticle.velocity)
           copyPos(addVectors(heldParticle2.velocity, scaleVector(offset, -delta * settings.binderPower * difference / (realDistance * heldParticle2.mass))), heldParticle2.velocity)
+          // Slow down the particles in the direction of their movement towards/away from one another.
+          var displacement = subtractVectors(heldParticle, heldParticle2)
+          var projection = projectVector(heldParticle.velocity, displacement)
+          var rejection = subtractVectors(heldParticle.velocity, projection)
+          var newProjection = scaleVector(projection, (1 - settings.binderDrag) ** delta)
+          copyPos(addVectors(newProjection, rejection), heldParticle.velocity)
+          var projection2 = projectVector(heldParticle2.velocity, displacement)
+          var rejection2 = subtractVectors(heldParticle2.velocity, projection2)
+          var newProjection2 = scaleVector(projection2, (1 - settings.binderDrag) ** delta)
+          copyPos(addVectors(newProjection2, rejection2), heldParticle2.velocity)
         }
       }
     }
