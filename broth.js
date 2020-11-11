@@ -142,7 +142,7 @@ const PARTICLE = {
 
 const ACTION = {
   createControl: 0,
-  createGrabber: 1,
+  createBinder: 1,
   createBattery: 2,
   createMover: 3,
   createEnergy: 4,
@@ -1486,7 +1486,7 @@ async function draw() {
         strokeWeight(size * 0.0375)
         circle(x + size / 2, y + size / 2, size / 2)
         break
-      case ACTION.createGrabber:
+      case ACTION.createBinder:
         fill(COLORS.binderFill)
         stroke(COLORS.binderStroke)
         strokeWeight(size * 0.0375)
@@ -1701,7 +1701,7 @@ function mousePressed() {
         case ACTION.createControl:
           simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.control))
           break
-        case ACTION.createGrabber:
+        case ACTION.createBinder:
           simulationState.particles.push(newParticle(pos.x, pos.y, PARTICLE.binder))
           break
         case ACTION.createEnergy:
